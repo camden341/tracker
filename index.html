@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Money & Task Tracker</title>
+<style>
+:root{
+--bg:#0f1220; --card:#171a2b; --ink:#f5f7ff; --muted:#b8c0ff;
+--accent:#7c9cff; --accent2:#9cfac8; --danger:#ffa3a3; --ok:#7ef0a0; --border:#232642;
+}
+html,body{margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:var(--ink); background:linear-gradient(180deg,#0e1022 0%, #0b0d1a 100%);}
+.wrap{max-width:1100px; margin:0 auto; padding:20px 16px 40px;}
+header{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px}
+.logo{width:40px; height:40px; border-radius:12px; background:radial-gradient(circle at 30% 30%, var(--accent2), var(--accent)); display:grid; place-items:center; font-weight:800; color:#0b0d1a;}
+h1{margin:0; font-size:clamp(22px,4vw,34px)}
+.sub{color:var(--muted); margin-top:4px; font-size:14px}
+.card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px;}
+.grid{display:grid; gap:16px}
+@media(min-width:900px){ .grid-3{grid-template-columns:repeat(3, 1fr)} .grid-2{grid-template-columns:repeat(2,1fr)} }
+button,.btn{background:linear-gradient(180deg,var(--accent), #5377ff); color:white; border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer}
+button.secondary{ background:#232a4a; color:var(--ink); border:1px solid var(--border)}
+button.danger{ background:#3a1f1f; border:1px solid #5a2c2c; color:#ffbdbd}
+input,select,textarea{width:100%; background:#0f1222; border:1px solid var(--border); color:var(--ink); border-radius:12px; padding:10px; outline:none}
+label{font-size:14px; color:var(--muted); margin:8px 0 6px; display:block}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.pill{padding:10px 12px; border-radius:12px; background:#0f152f; border:1px solid var(--border); display:flex; align-items:center; justify-content:center}
+.progress{height:12px; background:#10142a; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+.progress > div{height:100%; background:linear-gradient(90deg, var(--accent2), var(--ok)); width:0%}
+table{width:100%; border-collapse:collapse; margin-top:10px; font-size:14px}
+th,td{padding:8px 10px; border-bottom:1px solid var(--border)}
+th{text-align:left; color:var(--muted); font-weight:600}
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.row > *{flex:1}
+.row .fit{flex:0 0 auto}
+.hidden{display:none !important}
+.footer{margin:28px 0 10px; text-align:center; color:var(--muted); font-size:12px}
+
+/* Tabs */
+.tabs{
+position:sticky; top:0; z-index:5; background:rgba(11,13,26,0.75); backdrop-filter: blur(8px);
+border-bottom:1px solid var(--border); margin:0 -16px 12px; padding:8px 12px;
+}
+.tabbar{display:flex; gap:8px; overflow:auto; scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:#121632; color:var(--ink); font-weight:700; cursor:pointer; white-space:nowrap}
+.tab.active{background:linear-gradient(180deg,var(--accent), #5377ff); border-color:transparent}
+
+/* Chart mini legend */
+.legend{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.swatch{width:12px; height:12px; border-radius:3px; display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="logo">MT</div>
+<div>
+<h1>My Money & Task Tracker</h1>
+<div class="sub">Set your goal, make your own task list, and track everything (earnings + expenses).</div>
+</div>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+<div class="tabbar">
+<button class="tab active" data-tab="overview">Overview</button>
+<button class="tab" data-tab="tasks">Tasks</button>
+<button class="tab" data-tab="log">Log</button>
+<button class="tab" data-tab="history">History / Export</button>
+<button class="tab" data-tab="monthly">Monthly</button>
+</div>
+</div>
+
+<!-- ========== OVERVIEW ========== -->
+<section id="tab-overview" class="tabpage">
+<div class="card">
+<div class="row">
+<div class="fit" style="min-width:220px">
+<div class="muted small">Weekly goal</div>
+<div class="row">
+<input id="goalInput" type="number" min="0" step="1" class="fit" style="width:120px" />
+<button id="saveGoal" class="fit">Save Goal</button>
+</div>
+<div class="small muted">Tip: $21/week ≈ $3/day</div>
+</div>
+<div style="flex:2">
+<div class="muted">This week’s progress</div>
+<div class="progress" style="margin:6px 0 8px"><div id="bar"></div></div>
+<div class="grid grid-3">
+<div class="pill">Earned this week: <strong id="weekEarn">$0.00</strong></div>
+<div class="pill">Goal: <strong id="goalLabel">$0</strong></div>
+<div class="pill">Days left: <strong id="daysLeft">0</strong></div>
+</div>
+<div class="pill" style="margin-top:8px">Needed/day: <strong id="needPerDay">$0.00</strong></div>
+<div class="small muted" id="weekSpan" style="margin-top:6px"></div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:12px">
+<div class="small muted">Safety tip: keep personal info private and involve a parent with new customers.</div>
+</div>
+</section>
+
+<!-- ========== TASKS ========== -->
+<section id="tab-tasks" class="tabpage hidden">
+<div class="card">
+<h2 style="margin:0 0 6px">My Task List</h2>
+<div class="muted small">Create tasks/services (Dog Walk, Plant Watering, Homework Help…). These become quick-pick choices when logging entries.</div>
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Task/Service Name</label>
+<input id="taskName" placeholder="e.g., Dog Walk" />
+</div>
+<div>
+<label>Default Price ($, optional)</label>
+<input id="taskPrice" type="number" min="0" step="0.01" placeholder="e.g., 5.00" />
+</div>
+</div>
+<div class="row" style="margin-top:8px">
+<button id="addTask">Add Task</button>
+<button id="clearTasks" class="danger">Delete All Tasks</button>
+<span class="muted small" style="margin-left:auto">Saved on this device only.</span>
+</div>
+<table id="taskTable">
+<thead><tr><th>Task</th><th>Default Price</th><th>Actions</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
+
+<!-- ========== LOG ========== -->
+<section id="tab-log" class="tabpage hidden">
+<div class="card">
+<h2 style="margin:0 0 6px">Log an Entry</h2>
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Date</label>
+<input id="entryDate" type="date" />
+</div>
+<div>
+<label>Type</label>
+<select id="entryType">
+<option value="earning">Earning</option>
+<option value="expense">Expense</option>
+</select>
+</div>
+</div>
+<div class="grid grid-2">
+<div>
+<label>Task/Service</label>
+<select id="entryTask"></select>
+</div>
+<div>
+<label>Description (optional)</label>
+<input id="entryDesc" placeholder="e.g., Dog walk for Ms. Lee" />
+</div>
+</div>
+<div class="grid grid-3">
+<div>
+<label>Rate ($, optional)</label>
+<input id="entryRate" type="number" min="0" step="0.01" placeholder="e.g., 5.00" />
+</div>
+<div>
+<label>Quantity</label>
+<input id="entryQty" type="number" min="1" step="1" value="1" />
+</div>
+<div>
+<label>Total ($)</label>
+<input id="entryTotal" type="number" min="0" step="0.01" placeholder="auto or type" />
+</div>
+</div>
+<div class="row" style="margin-top:8px">
+<button id="addEntry">Add Entry</button>
+<span class="muted small" style="margin-left:auto">Totals update in Overview & History.</span>
+</div>
+</div>
+</section>
+
+<!-- ========== HISTORY / EXPORT ========== -->
+<section id="tab-history" class="tabpage hidden">
+<div class="card">
+<h2 style="margin:0 0 6px">This Week Summary</h2>
+<div class="grid grid-3">
+<div class="pill">Earnings: <strong id="weekEarnT">$0.00</strong></div>
+<div class="pill">Expenses: <strong id="weekExpT">$0.00</strong></div>
+<div class="pill">Net: <strong id="weekNetT">$0.00</strong></div>
+</div>
+<div class="row" style="margin-top:10px">
+<button id="exportCSV" class="secondary">Export CSV</button>
+<button id="clearEntries" class="danger">Delete All Entries</button>
+<span class="muted small" style="margin-left:auto" id="histWeekSpan"></span>
+</div>
+<table id="entryTable" style="margin-top:10px">
+<thead>
+<tr>
+<th>Date</th><th>Type</th><th>Task</th><th>Description</th><th>Rate</th><th>Qty</th><th>Total</th><th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
+
+<!-- ========== MONTHLY (NEW) ========== -->
+<section id="tab-monthly" class="tabpage hidden">
+<div class="card">
+<div class="row">
+<h2 style="margin:0">Monthly Progress</h2>
+<span class="muted small" style="margin-left:auto">Last 12 months</span>
+</div>
+
+<div class="row" style="margin-top:6px">
+<div class="fit">
+<label class="small" style="margin:0 0 4px; display:block">Mode</label>
+<select id="chartMode" class="fit" style="min-width:180px">
+<option value="line">Line chart — Earnings vs Expenses</option>
+<option value="bar">Bar chart — Net per month</option>
+</select>
+</div>
+<div class="legend fit">
+<span class="swatch" id="sw1" style="background:#6aa9ff"></span><span class="small">Earnings</span>
+<span class="swatch" id="sw2" style="background:#ffd166"></span><span class="small">Expenses</span>
+</div>
+</div>
+
+<div style="margin-top:10px">
+<canvas id="monthlyCanvas" height="280" style="width:100%; max-width:100%"></canvas>
+</div>
+
+<table id="monthlyTable" style="margin-top:12px">
+<thead><tr><th>Month</th><th>Earnings</th><th>Expenses</th><th>Net</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
+
+<div class="footer">Built for you. Everything saves in your browser (local only).</div>
+</div>
+
+<script>
+/* ========= Storage Keys ========= */
+const KEY_GOAL = "mt_goal_v1";
+const KEY_TASKS = "mt_tasks_v1";
+const KEY_ENTRIES= "mt_entries_v1";
+const KEY_TAB = "mt_last_tab_v1";
+
+/* ========= Helpers ========= */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const fmt = n => `$${(+n).toFixed(2)}`;
+
+function todayISO(){ const d=new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+
+function weekRange(d=new Date()){
+// ISO week (Mon–Sun)
+const day=(d.getDay()+6)%7; // 0 Mon..6 Sun
+const start=new Date(d); start.setDate(d.getDate()-day); start.setHours(0,0,0,0);
+const end=new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+return {start,end};
+}
+
+function inThisWeek(dateStr){
+const d = new Date(dateStr);
+const {start,end} = weekRange(new Date());
+return d >= start && d <= end;
+}
+
+/* FIXED: accurate "days left" including TODAY */
+function daysLeftInWeek(){
+const {end} = weekRange(new Date());
+const startToday = new Date(); startToday.setHours(0,0,0,0);
+const msPerDay = 86400000;
+const diffWholeDays = Math.floor((end - startToday)/msPerDay) + 1; // include today
+return Math.max(0, diffWholeDays);
+}
+
+/* ========= State ========= */
+let tasks = JSON.parse(localStorage.getItem(KEY_TASKS) || "[]");
+let entries = JSON.parse(localStorage.getItem(KEY_ENTRIES) || "[]");
+let goal = +(localStorage.getItem(KEY_GOAL) || 21); // default $21
+
+/* ========= Tabs ========= */
+function showTab(name){
+$$(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab===name));
+$$(".tabpage").forEach(p=> p.classList.add("hidden"));
+$("#tab-"+name).classList.remove("hidden");
+localStorage.setItem(KEY_TAB, name);
+if(name==="monthly"){ drawMonthly(); }
+}
+$$(".tab").forEach(btn=> btn.addEventListener("click", ()=> showTab(btn.dataset.tab)));
+showTab(localStorage.getItem(KEY_TAB) || "overview");
+
+/* ========= Init ========= */
+$("#goalInput").value = goal;
+$("#goalLabel").textContent = `$${goal}`;
+$("#entryDate").value = todayISO();
+renderTasks();
+renderEntries();
+updateProgress();
+updateWeekLabels();
+
+/* ========= Goal ========= */
+$("#saveGoal").addEventListener("click", ()=>{
+const val = +$("#goalInput").value;
+if(!(val>=0)){ alert("Enter a number for your goal."); return; }
+goal = Math.round(val);
+localStorage.setItem(KEY_GOAL, goal);
+$("#goalLabel").textContent = `$${goal}`;
+updateProgress();
+});
+
+/* ========= Tasks ========= */
+function renderTasks(){
+// Fill dropdown
+const dd = $("#entryTask");
+dd.innerHTML = "";
+const ph = document.createElement("option"); ph.value=""; ph.textContent="(No task)"; dd.appendChild(ph);
+tasks.forEach(t=>{ const o=document.createElement("option"); o.value=t.name; o.textContent=t.name; dd.appendChild(o); });
+// Table
+const tbody = $("#taskTable tbody");
+tbody.innerHTML = "";
+tasks.forEach((t,i)=>{
+const tr = document.createElement("tr");
+tr.innerHTML = `
+<td>${t.name}</td>
+<td>${t.price ? fmt(t.price) : "-"}</td>
+<td>
+<button data-i="${i}" class="editTask secondary">Edit</button>
+<button data-i="${i}" class="delTask danger">Delete</button>
+</td>`;
+tbody.appendChild(tr);
+});
+$$(".editTask").forEach(b=> b.addEventListener("click", ()=>{
+const i=+b.dataset.i, cur=tasks[i];
+const name=prompt("Task name:", cur.name); if(name===null) return;
+const priceStr=prompt("Default price (blank for none):", cur.price ?? "");
+let price = priceStr==="" ? "" : +priceStr;
+if(priceStr!=="" && !(price>=0)){ alert("Price must be a number or blank."); return; }
+tasks[i]={name: name.trim() || cur.name, price: priceStr===""? "": price};
+localStorage.setItem(KEY_TASKS, JSON.stringify(tasks));
+renderTasks();
+}));
+$$(".delTask").forEach(b=> b.addEventListener("click", ()=>{
+const i=+b.dataset.i;
+if(confirm(`Delete task "${tasks[i].name}"?`)){
+tasks.splice(i,1);
+localStorage.setItem(KEY_TASKS, JSON.stringify(tasks));
+renderTasks();
+}
+}));
+}
+$("#addTask").addEventListener("click", ()=>{
+const name = $("#taskName").value.trim();
+const priceStr = $("#taskPrice").value.trim();
+if(!name){ alert("Add a task name."); return; }
+const price = priceStr==="" ? "" : +priceStr;
+if(priceStr!=="" && !(price>=0)){ alert("Price must be a number or blank."); return; }
+tasks.push({name, price});
+localStorage.setItem(KEY_TASKS, JSON.stringify(tasks));
+$("#taskName").value=""; $("#taskPrice").value="";
+renderTasks();
+});
+$("#clearTasks").addEventListener("click", ()=>{
+if(confirm("Delete ALL tasks? This cannot be undone.")){
+tasks = []; localStorage.setItem(KEY_TASKS, JSON.stringify(tasks)); renderTasks();
+}
+});
+
+/* ========= Entries ========= */
+function entryRowHTML(e,i){
+return `
+<td>${e.date}</td>
+<td>${e.type}</td>
+<td>${e.task||"-"}</td>
+<td>${e.desc||"-"}</td>
+<td>${e.rate!==""? fmt(e.rate): "-"}</td>
+<td>${e.qty}</td>
+<td>${fmt(e.total)}</td>
+<td>
+<button data-i="${i}" class="editEntry secondary">Edit</button>
+<button data-i="${i}" class="delEntry danger">Delete</button>
+</td>
+`;
+}
+
+function renderEntries(){
+// sort by date desc
+entries.sort((a,b)=> new Date(b.date) - new Date(a.date));
+const tbody = $("#entryTable tbody");
+tbody.innerHTML = "";
+let weekEarn=0, weekExp=0;
+entries.forEach((e,i)=>{
+const tr = document.createElement("tr");
+tr.innerHTML = entryRowHTML(e,i);
+tbody.appendChild(tr);
+if(inThisWeek(e.date)){
+if(e.type==="earning") weekEarn += e.total;
+else weekExp += e.total;
+}
+});
+$("#weekEarnT").textContent = fmt(weekEarn);
+$("#weekExpT").textContent = fmt(weekExp);
+$("#weekNetT").textContent = fmt(weekEarn - weekExp);
+$("#weekEarn").textContent = fmt(weekEarn);
+
+// attach actions
+$$(".editEntry").forEach(b=> b.addEventListener("click", ()=> editEntry(+b.dataset.i)));
+$$(".delEntry").forEach(b=> b.addEventListener("click", ()=>{
+const i=+b.dataset.i;
+if(confirm("Delete this entry?")){
+entries.splice(i,1);
+localStorage.setItem(KEY_ENTRIES, JSON.stringify(entries));
+renderEntries(); updateProgress(); drawMonthly();
+}
+}));
+updateProgress();
+drawMonthly();
+}
+
+function computeTotal(rateStr, qtyStr, totalStr){
+const hasTotal = totalStr!=="" && !isNaN(+totalStr);
+if(hasTotal) return +totalStr;
+const rate = rateStr===""? 0 : +rateStr;
+const qty = qtyStr===""? 1 : +qtyStr;
+return +(rate*qty);
+}
+
+$("#addEntry").addEventListener("click", ()=>{
+const date = $("#entryDate").value || todayISO();
+const type = $("#entryType").value;
+const task = $("#entryTask").value || "";
+const desc = $("#entryDesc").value.trim();
+const rateStr = $("#entryRate").value.trim();
+const qtyStr = $("#entryQty").value.trim() || "1";
+const totalStr = $("#entryTotal").value.trim();
+const total = computeTotal(rateStr, qtyStr, totalStr);
+if(!(total>0)){ alert("Total must be greater than 0."); return; }
+const rate = rateStr===""? "" : +rateStr;
+const qty = +qtyStr;
+entries.push({date, type, task, desc, rate, qty, total});
+localStorage.setItem(KEY_ENTRIES, JSON.stringify(entries));
+// clear fields
+$("#entryDesc").value=""; $("#entryRate").value=""; $("#entryQty").value="1"; $("#entryTotal").value="";
+renderEntries();
+});
+
+function editEntry(i){
+const e = entries[i];
+const date = prompt("Date (YYYY-MM-DD):", e.date); if(date===null) return;
+const type = prompt("Type (earning/expense):", e.type); if(type===null) return;
+const task = prompt("Task/Service (or blank):", e.task ?? ""); if(task===null) return;
+const desc = prompt("Description (optional):", e.desc ?? ""); if(desc===null) return;
+const rateStr = prompt("Rate (blank to keep blank):", e.rate === "" ? "" : e.rate); if(rateStr===null) return;
+const qtyStr = prompt("Quantity:", e.qty); if(qtyStr===null) return;
+const totalStr = prompt("Total ($):", e.total); if(totalStr===null) return;
+const rate = rateStr==="" ? "" : +rateStr;
+const qty = +qtyStr;
+const total = +totalStr;
+if(!(total>0)){ alert("Total must be > 0."); return; }
+entries[i] = {date, type, task, desc, rate, qty, total};
+localStorage.setItem(KEY_ENTRIES, JSON.stringify(entries));
+renderEntries();
+}
+
+/* ========= Export / Clear ========= */
+$("#exportCSV").addEventListener("click", ()=>{
+if(entries.length===0){ alert("No entries yet."); return; }
+const rows = [["Date","Type","Task","Description","Rate","Qty","Total"]];
+entries.forEach(e=> rows.push([
+e.date, e.type, e.task||"", (e.desc||"").replaceAll(",",";"),
+e.rate===""? "" : e.rate, e.qty, e.total
+]));
+const csv = rows.map(r=> r.join(",")).join("\n");
+const blob = new Blob([csv], {type:"text/csv"});
+const a = document.createElement('a');
+a.href = URL.createObjectURL(blob);
+a.download = "my-tracker-entries.csv";
+document.body.appendChild(a); a.click(); a.remove();
+});
+
+$("#clearEntries").addEventListener("click", ()=>{
+if(confirm("Delete ALL entries? This cannot be undone.")){
+entries = [];
+localStorage.setItem(KEY_ENTRIES, JSON.stringify(entries));
+renderEntries();
+}
+});
+
+/* ========= Auto-fill rate from selected task ========= */
+$("#entryTask").addEventListener("change", ()=>{
+const name = $("#entryTask").value;
+const found = tasks.find(t=> t.name===name);
+if(found && found.price!==""){
+$("#entryRate").value = found.price;
+// precompute total if qty present
+const qty = +($("#entryQty").value||"1");
+$("#entryTotal").value = (found.price * (qty||1)).toFixed(2);
+}
+});
+
+$("#entryQty").addEventListener("input", ()=>{
+const rateStr = $("#entryRate").value.trim();
+const qtyStr = $("#entryQty").value.trim();
+if(rateStr!=="" && qtyStr!==""){
+const total = (+rateStr) * (+qtyStr);
+$("#entryTotal").value = isFinite(total) ? total.toFixed(2) : "";
+}
+});
+
+/* ========= Progress & Week Labels ========= */
+function updateWeekLabels(){
+const {start,end} = weekRange(new Date());
+const fmtD = d=> d.toLocaleDateString([], {month:"short", day:"numeric"});
+$("#weekSpan").textContent = `This week: ${fmtD(start)}–${fmtD(end)}`;
+$("#histWeekSpan").textContent = `This week: ${fmtD(start)}–${fmtD(end)}`;
+}
+
+function updateProgress(){
+const dLeft = daysLeftInWeek();
+$("#daysLeft").textContent = String(dLeft);
+// sum earnings only
+let earn = 0;
+entries.forEach(e=>{ if(e.type==="earning" && inThisWeek(e.date)) earn += e.total; });
+const pct = goal>0 ? Math.max(0, Math.min(100, (earn/goal)*100)) : 0;
+$("#bar").style.width = pct + "%";
+$("#weekEarn").textContent = fmt(earn);
+const remain = Math.max(0, goal - earn);
+const needPerDay = dLeft>0 ? (remain / dLeft) : remain;
+$("#needPerDay").textContent = fmt(needPerDay);
+}
+
+/* ========= MONTHLY AGG + CHARTS ========= */
+$("#chartMode").addEventListener("change", drawMonthly);
+window.addEventListener("resize", ()=> { if(!$("#tab-monthly").classList.contains("hidden")) drawMonthly(); });
+
+function last12MonthKeys(){
+// return array of keys like "2025-08" oldest->newest
+const now = new Date();
+const arr = [];
+for(let i=11;i>=0;i--){
+const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+const y = d.getFullYear();
+const m = String(d.getMonth()+1).padStart(2,"0");
+arr.push(`${y}-${m}`);
+}
+return arr;
+}
+
+function monthLabel(key){
+const [y,m]=key.split("-").map(Number);
+const d = new Date(y, m-1, 1);
+return d.toLocaleDateString([], {month:"short"});
+}
+
+function aggregateMonthly(){
+const keys = last12MonthKeys();
+const map = {};
+keys.forEach(k=> map[k] = {earn:0, exp:0});
+entries.forEach(e=>{
+const d = new Date(e.date);
+if(isNaN(d)) return;
+const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+if(map[k]){
+if(e.type==="earning") map[k].earn += e.total;
+else if(e.type==="expense") map[k].exp += e.total;
+}
+});
+return keys.map(k=> ({key:k, earn: map[k].earn, exp: map[k].exp, net: map[k].earn - map[k].exp}));
+}
+
+function drawMonthly(){
+const data = aggregateMonthly();
+// table
+const tbody = $("#monthlyTable tbody");
+tbody.innerHTML = "";
+data.forEach(r=>{
+const tr = document.createElement("tr");
+tr.innerHTML = `<td>${monthLabel(r.key)}</td><td>${fmt(r.earn)}</td><td>${fmt(r.exp)}</td><td>${fmt(r.net)}</td>`;
+tbody.appendChild(tr);
+});
+
+const mode = $("#chartMode").value;
+const canvas = $("#monthlyCanvas");
+const ctx = canvas.getContext("2d");
+
+// resize canvas width to container
+const w = canvas.clientWidth;
+canvas.width = w; // keep given height
+const h = canvas.height;
+
+// clear
+ctx.clearRect(0,0,w,h);
+
+// build scales
+const padding = {l:42, r:16, t:18, b:26};
+const plotW = w - padding.l - padding.r;
+const plotH = h - padding.t - padding.b;
+
+const labels = data.map(d=> monthLabel(d.key));
+let yMax;
+if(mode==="bar"){
+// bars for net so range can be negative
+const vals = data.map(d=> d.net);
+const maxA = Math.max(0, ...vals);
+const minA = Math.min(0, ...vals);
+const pad = Math.max(10, Math.round((maxA - minA)*0.1));
+yMax = maxA + pad;
+var yMin = minA - pad;
+}else{
+const maxA = Math.max(...data.map(d=> Math.max(d.earn, d.exp)), 10);
+yMax = Math.ceil(maxA/10)*10;
+var yMin = 0;
+}
+
+const xStep = plotW / (labels.length-1);
+const yScale = v => padding.t + plotH * (1 - (v - yMin)/(yMax - yMin));
+
+// axes
+ctx.strokeStyle = "#334"; ctx.lineWidth = 1;
+// y-axis
+ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.stroke();
+// x-axis (zero line for bar mode)
+const x0y = yScale(0);
+ctx.beginPath(); ctx.moveTo(padding.l, mode==="bar" ? x0y : padding.t+plotH); ctx.lineTo(padding.l+plotW, mode==="bar" ? x0y : padding.t+plotH); ctx.stroke();
+
+// y ticks
+ctx.fillStyle = "#9ab";
+ctx.font = "12px system-ui";
+const steps = 5;
+for(let i=0;i<=steps;i++){
+const v = yMin + (i/steps)*(yMax - yMin);
+const y = yScale(v);
+ctx.strokeStyle = "rgba(255,255,255,0.05)";
+ctx.beginPath(); ctx.moveTo(padding.l, y); ctx.lineTo(padding.l+plotW, y); ctx.stroke();
+ctx.fillText("$"+Math.round(v), 6, y+4);
+}
+// x labels
+labels.forEach((lab,i)=>{
+const x = padding.l + i*xStep;
+const y = padding.t+plotH+16;
+ctx.fillText(lab, x-10, y);
+});
+
+if(mode==="line"){
+// Earnings line (blue)
+drawLine(ctx, data.map((d,i)=> ({x: padding.l + i*xStep, y: yScale(d.earn)})), "#6aa9ff");
+drawDots(ctx, data.map((d,i)=> ({x: padding.l + i*xStep, y: yScale(d.earn)})), "#6aa9ff");
+
+// Expenses line (yellow)
+drawLine(ctx, data.map((d,i)=> ({x: padding.l + i*xStep, y: yScale(d.exp)})), "#ffd166");
+drawDots(ctx, data.map((d,i)=> ({x: padding.l + i*xStep, y: yScale(d.exp)})), "#ffd166");
+
+// legend swatches visible
+$("#sw1").style.opacity = "1"; $("#sw2").style.opacity = "1";
+} else {
+// Bar chart for net
+const barW = Math.max(8, plotW/labels.length * 0.6);
+data.forEach((d,i)=>{
+const xCenter = padding.l + i*xStep;
+const x = xCenter - barW/2;
+const yVal = d.net;
+const yTop = yScale(Math.max(yVal, 0));
+const yBottom = yScale(Math.min(yVal, 0));
+const barH = Math.abs(yBottom - yTop);
+ctx.fillStyle = yVal >= 0 ? "#7ef0a0" : "#ffa3a3";
+ctx.fillRect(x, yTop, barW, barH);
+});
+// dim earnings/expenses legend since bar shows net
+$("#sw1").style.opacity = "0.35"; $("#sw2").style.opacity = "0.35";
+}
+}
+
+function drawLine(ctx, pts, color){
+ctx.strokeStyle = color; ctx.lineWidth = 2;
+ctx.beginPath();
+pts.forEach((p,i)=> i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+ctx.stroke();
+}
+function drawDots(ctx, pts, color){
+ctx.fillStyle = color;
+pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill(); });
+}
+</script>
+</body>
+</html>
